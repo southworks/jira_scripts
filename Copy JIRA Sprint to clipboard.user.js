@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Copy JIRA Sprint to clipboard
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.1.1
 // @description  Copy JIRA sprint issues to the clipboard (as HTML)
 // @author       jfatta
 // @match        https://azurecom.atlassian.net/secure/RapidBoard.jspa*
