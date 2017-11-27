@@ -52,11 +52,15 @@
         var issueColor = $issue.find(".ghx-grabber").css("background-color");
         switch(issueColor) {
             case "rgb(46, 194, 96)": // green
+            case "rgb(0, 153, 0)": // green devops
+            case "rgb(64, 130, 230)": // in code review on devops is done
                 return "<b><span style='color:#00B050'>[completed] </span></b>";
             case "rgb(255, 153, 51)": // orange
             case "rgb(31, 141, 219)": // "blue" means in code review
+            case "rgb(247, 197, 96)": //devops in progress
                 return "<b><span style='color:#ED7D31'>[in progress] </span></b>";
             case "rgb(255, 20, 32)": // "red" (flagged)
+            case "rgb(204, 0, 0)": // devops red
                 return "<b><span style='color:red'>[blocked] </span></b>";
             default:
                 return "<b><span style='color:black'>[pending] </span></b>";
