@@ -14,7 +14,7 @@
     function registerControls() {
         if ($(".copyIssueToClipboard").length === 0) {
             // Add copy to clipboard control:
-            $(".ghx-sprint-edit").after("<a title='Copy sprint issues to the clipboard' class='copyIssueToClipboard aui-icon aui-icon-small aui-iconfont-copy-clipboard edit-labels' style='display:none'/>");
+            $('.header-left').append("<a title='Copy sprint issues to the clipboard' class='copyIssueToClipboard aui-icon aui-icon-small aui-iconfont-copy-clipboard edit-labels' style='display:none'/>");
             $(".copyIssueToClipboard").on("click", function(e) {
                 e.stopPropagation();
                 copySprintIssuesToClipboard($(this).parents(".ghx-backlog-container").find(".ghx-issues"));
