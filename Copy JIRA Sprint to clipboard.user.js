@@ -35,7 +35,7 @@
     function copySprintIssuesToClipboard($issues){
         var content = "";
 
-        $issues.find(".js-issue").each(function(i){
+        $issues.find(".js-issue").not('.ghx-filtered').each(function(i){
             console.log(i + " :" + $(this).text());
             content +=
                 "<p>" +
