@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Copy JIRA Sprint to clipboard
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.4
 // @description  Copy JIRA sprint issues to the clipboard (as HTML)
 // @author       jfatta
 // @match        https://azurecom.atlassian.net/secure/RapidBoard.jspa*
@@ -54,17 +54,32 @@
     }
 
     function copySprintIssuesToClipboard($issues, sprintTitle, boardLink){
-        var content = "";
+        var content = "<ol>";
 
         $issues.find(".js-issue").not('.ghx-filtered').each(function(i){
-            console.log(i + " :" + $(this).text());
+            var $issue = $(this);
+            console.log(i + " :" + $issue.text());
+
+            var spent = $($issue.find(".ghx-extra-field")[0]).text().replace("h", ""), // First look for the time spent
+                spentText = "";
+
+            if (spent.toLowerCase() === "none")
+            {
+                spent = "0";
+            }
+
+            var estimate = $issue.find("span.aui-badge").text().replace("h", "");
+
             content +=
-                "<p>" +
-                resolveIssueStatus($(this)) +
-                "<span>" + $(this).find(".ghx-summary .ghx-inner").text() + "</span>"+
-                " <span>[<a href='https://azurecom.atlassian.net/browse/"+ $(this).data("issue-key") + "'>"+ $(this).data("issue-key") +"</a>]" +
-                "</p>";
+                "<li><p>" +
+                resolveIssueStatus($issue) +
+                "<span>" + $issue.find(".ghx-summary .ghx-inner").text() + "</span>"+
+                " <span>[<a href='https://azurecom.atlassian.net/browse/"+ $issue.data("issue-key") + "'>"+ $issue.data("issue-key") +"</a>]</span>" +
+                "<span><i> - (Spent: " + spent + " hs / Estimate: " + estimate + " hs)</i></span>" +
+                "</p></li>";
         });
+
+        content += '</ol>';
 
         GM_setClipboard("<p style='color:#2e75b5;font-family:Calibri;font-size:14pt'>Iteration Goals - Sprint " + sprintTitle + "</p><p></p><a href='" + boardLink + "'>" + boardLink + "</a><p>" + content + "</p>", "html");
     }
