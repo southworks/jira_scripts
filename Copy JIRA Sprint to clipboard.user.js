@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Copy JIRA Sprint to clipboard
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      0.1.5
 // @description  Copy JIRA sprint issues to the clipboard (as HTML)
-// @author       jfatta
+// @author       jfatta, litodam
 // @match        https://azurecom.atlassian.net/secure/RapidBoard.jspa*
 // @grant        GM_setClipboard
 // ==/UserScript==
@@ -12,27 +12,35 @@
     'use strict';
 
     function registerControls() {
-        if ($(".copyIssueToClipboard").length === 0) {
-            // Add copy to clipboard control:
-            $('.header-left').append("<a title='Copy sprint issues to the clipboard' class='copyIssueToClipboard aui-icon aui-icon-small aui-iconfont-copy-clipboard edit-labels' style='display:none'/>");
-            $(".copyIssueToClipboard").on("click", function(e) {
-                e.stopPropagation();
-                var backlog = $(this).parents(".ghx-backlog-container"),
-                    sprintTitle = backlog.find('.ghx-name').text(),
-                    boardLink = getBoardLink();
-                copySprintIssuesToClipboard(backlog.find(".ghx-issues"), sprintTitle, boardLink);
-            });
+        // retrieve all sprints
+        var sprints = $("div[data-sprint-id]");
 
-            $(".ghx-backlog-header" ).hover(
-                function() {
-                    $(this).find(".copyIssueToClipboard").show();
-                }, function() {
-                     $(this).find(".copyIssueToClipboard").hide();
-                }
-            );
+        sprints.each(function(index, value) {
+            var sprint = $(value);
 
-            console.log('TM-CB: copy to clipboard button added');
-        }
+            if (sprint.find(".copyIssueToClipboard").length === 0) {
+                // Add copy to clipboard control:
+                sprint.find('.header-left').append("<a title='Copy sprint issues to the clipboard' class='copyIssueToClipboard aui-icon aui-icon-small aui-iconfont-copy-clipboard edit-labels' style='display:none'/>");
+                sprint.find(".copyIssueToClipboard").on("click", function(e) {
+                    e.stopPropagation();
+                    var backlog = $(this).parents(".ghx-backlog-container"),
+                        sprintTitle = backlog.find('.ghx-name').text(),
+                        boardLink = getBoardLink();
+
+                    copySprintIssuesToClipboard(backlog.find(".ghx-issues"), sprintTitle, boardLink);
+                });
+
+                sprint.find(".ghx-backlog-header" ).hover(
+                    function() {
+                        $(this).find(".copyIssueToClipboard").show();
+                    }, function() {
+                        $(this).find(".copyIssueToClipboard").hide();
+                    }
+                );
+
+                console.log('TM-CB: copy to clipboard button added');
+            }
+        });
     }
 
     function getBoardLink()
@@ -60,22 +68,40 @@
             var $issue = $(this);
             console.log(i + " :" + $issue.text());
 
-            var spent = $($issue.find(".ghx-extra-field")[0]).text().replace("h", ""), // First look for the time spent
-                spentText = "";
+            // issue status
+            var issueStatus = resolveIssueStatus($issue);
+            var isDone = issueStatus.indexOf("completed") !== -1;
 
-            if (spent.toLowerCase() === "none")
-            {
-                spent = "0";
+            // resolve estimate
+            var estimate = $issue.find("span[title='Estimation']").text();
+            if (!estimate) {
+                estimate = $issue.find("span[title='Original Time Estimate']").text();
             }
 
-            var estimate = $issue.find("span.aui-badge").text().replace("h", "");
+            // resolve spent
+            var spentElement = $issue.find("span.ghx-extra-field[data-tooltip*='Time Spent']");
+            var spent = spentElement.text();
+            if (spent && spent === "None") {
+                spent = "";
+            }
 
+            var spentText = spent.length === 0 ? "" : ", spent: " + spent;
+
+            // resolve remaining
+            var remaining = $issue.find("span.ghx-extra-field[data-tooltip*='Remaining Estimate']").text();
+            if (remaining && remaining === "None") {
+                remaining = "0";
+            }
+
+            var remainingText = isDone ? "" : ", remaining: " + remaining;
+
+            // (estimated 4h, remaining 2h, logged 2h)
             content +=
                 "<li><p>" +
                 resolveIssueStatus($issue) +
                 "<span>" + $issue.find(".ghx-summary .ghx-inner").text() + "</span>"+
                 " <span>[<a href='https://azurecom.atlassian.net/browse/"+ $issue.data("issue-key") + "'>"+ $issue.data("issue-key") +"</a>]</span>" +
-                "<span><i> - (Spent: " + spent + " hs / Estimate: " + estimate + " hs)</i></span>" +
+                "<span><i> (estimated: " + estimate + spentText + remainingText + ")</i></span>" +
                 "</p></li>";
         });
 
@@ -88,24 +114,35 @@
         var issueColor = $issue.find(".ghx-grabber").css("background-color");
         switch(issueColor) {
             case "rgb(46, 194, 96)": // green
+            case "rgb(46, 194, 95)": // green
             case "rgb(0, 153, 0)": // green devops
-            case "rgb(64, 130, 230)": // in code review on devops is done
+            case "rgb(64, 130, 230)": // in code review devops
+            case "rgb(31, 141, 219)": // "blue" means in code review
                 return "<b><span style='color:#00B050'>[completed] </span></b>";
+
             case "rgb(45, 73, 237)": //supcom in code review
                 return "<b><span style='color:#00B050'>[code review] </span></b>";
+
             case "rgb(255, 153, 51)": // orange
-            case "rgb(31, 141, 219)": // "blue" means in code review
-            case "rgb(247, 197, 96)": //devops in progress
+            case "rgb(247, 197, 96)": // devops in progress
             case "rgb(237, 174, 57)": // supcom in progress
                 return "<b><span style='color:#ED7D31'>[in progress] </span></b>";
+
             case "rgb(255, 20, 32)": // "red" (flagged)
             case "rgb(204, 0, 0)": // devops red
             case "rgb(242, 29, 29)" : // supcom blocked
                 return "<b><span style='color:red'>[blocked] </span></b>";
+
             default:
                 return "<b><span style='color:black'>[pending] </span></b>";
         }
     }
 
+    // register global ajax handler
+    $(document).ajaxSuccess(function() {
+        registerControls();
+    });
+
     registerControls();
+    
 })();
