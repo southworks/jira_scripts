@@ -114,6 +114,7 @@
         var issueColor = $issue.find(".ghx-grabber").css("background-color");
         switch(issueColor) {
             case "rgb(46, 194, 96)": // green
+            case "rgb(46, 194, 95)": // green
             case "rgb(0, 153, 0)": // green devops
             case "rgb(64, 130, 230)": // in code review devops
             case "rgb(31, 141, 219)": // "blue" means in code review
